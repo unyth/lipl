@@ -1,7 +1,7 @@
-CFLAGS := $(CFLAGS) -std99 -Wall
+CFLAGS := $(CFLAGS) -std=c99 -Wall
 
 prompt: prompt.c
-	gcc prompt.c -o prompt
+	gcc prompt.c $(CFLAGS) -o prompt
 
 clean:
 	rm prompt
