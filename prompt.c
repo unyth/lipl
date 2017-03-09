@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-static char input[2048];
+#include <editline/readline.h>
+#include <editline/history.h>
 
 int main (int argc, char **argv) {
 	puts("lipl version 0.0.0.0.1");
@@ -8,8 +10,9 @@ int main (int argc, char **argv) {
 	puts("");
 
 	while(1) {
-		fputs("lipl>>> ", stdout);
-		fgets(input, 2048, stdin);
-		fprintf(stdout, "No, you are a %s", input);
+		char* input = readline("lipl>>> ");
+		add_history(input);
+		fprintf(stdout, "No, you are a %s\n", input);
+		free(input);
 	}
 }
