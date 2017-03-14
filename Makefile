@@ -1,7 +1,7 @@
 CFLAGS := $(CFLAGS) -std=c99 -Wall
 
-prompt: prompt.c
-	gcc prompt.c $(CFLAGS) -ledit -o prompt
+parsing: parsing.c
+	cc $(CFLAGS) parsing.c mpc.c -ledit -lm -o parsing
 
 clean:
 	rm prompt
