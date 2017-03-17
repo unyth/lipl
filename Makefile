@@ -1,7 +1,7 @@
 CFLAGS := $(CFLAGS) -std=c99 -Wall
 
-evaluation: evaluation.c
-	cc $(CFLAGS) evaluation.c mpc.c -ledit -lm -o evaluation
+error_handling: error_handling.c
+	cc $(CFLAGS) error_handling.c mpc.c -ledit -lm -o error_handling
 
 clean:
-	rm evaluation
+	rm error_handling
