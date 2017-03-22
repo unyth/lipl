@@ -33,14 +33,27 @@ lval* lval_err(char* error_message) {
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_ERR;
 	v->err = malloc(strlen(error_message) + 1);
-	strcpy(v->err, m);
+	strcpy(v->err, error_message);
 	return v;
 }
 
 //lval constructor for symbol
+lval* lval_sym(char* symbol) {
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_SYM;
+	v->sym = malloc(strlen(symbol) + 1);
+	strcpy(v->sym, symbol);
+	return v;
+}
 
 //lval constructor for sexpr
-
+lval* lval_sexpr() {
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_SEXPR;
+	v->count = 0;
+	v->cell = NULL;
+	return v;
+}
 
 lval lval_num(long x) {
 	lval v;
