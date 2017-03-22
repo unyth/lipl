@@ -6,16 +6,41 @@
 
 #include "mpc.h"
 
-enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
+// enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
 
-enum { LVAL_NUM, LVAL_ERR };
+enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
 
-typedef struct {
+// new lval type
+typedef struct lval {
 	int type;
 	long num;
-	int err;
-
+	char* err;
+	char* sym;
+	int count;
+	struct lval** cell;
 } lval;
+
+// lval constructor for numbers
+lval* lval_num(long x) {
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_NUM;
+	v->num = x;
+	return v;
+}
+
+//lval constructor for errors
+lval* lval_err(char* error_message) {
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_ERR;
+	v->err = malloc(strlen(error_message) + 1);
+	strcpy(v->err, m);
+	return v;
+}
+
+//lval constructor for symbol
+
+//lval constructor for sexpr
+
 
 lval lval_num(long x) {
 	lval v;
@@ -88,16 +113,18 @@ int main (int argc, char **argv) {
 	/* MPC parsers */
 	mpc_parser_t* Number = mpc_new("number");
 	mpc_parser_t* Operator = mpc_new("operator");
+	mpc_parser_t* Sexpr = mpc_new("sexpr");
 	mpc_parser_t* Expr = mpc_new("expr");
 	mpc_parser_t* Lipl = mpc_new("lipl");
-
+	
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
 	  " number	: /-?[0-9]+/ ;				\
-	    operator: '+'|'-'|'*'|'/' ;				\
-	    expr	: <number> | '(' <operator> <expr>+ ')';\
-	    lipl	: /^/ <operator> <expr>+ /$/ ;" ,
-	Number, Operator, Expr, Lipl);
+	    operator	: '+'|'-'|'*'|'/' ;			\
+	    sexpr	: '(' <expr>* ')' ;			\
+	    expr	: <number> | <symbol> | <sexpr> ;	\
+	    lipl	: /^/ <expr>* /$/ ;" ,
+	  Number, Symbol, Sexpr, Expr, Lipl);
 
 	puts("lipl version 0.0.0.0.2");
 	puts("Press ctrl + c to exit");
@@ -108,8 +135,7 @@ int main (int argc, char **argv) {
 		add_history(input);
 		
 		mpc_result_t r;
-		if (mpc_parse("<stdin>", input, Lipl, &r)) {
-			lval result = eval(r.output);
+		if (mpc_parse("<stdin>", input, Lipl, &r)) { lval result = eval(r.output);
 			lval_println(result);
 			mpc_ast_delete(r.output);
 		} else {
@@ -121,5 +147,5 @@ int main (int argc, char **argv) {
 	}
 
 	/* Clean Up */
-	mpc_cleanup(4, Number, Operator, Expr, Lipl);
+	mpc_cleanup(5, Number, Operator, Sexpr, Expr, Lipl);
 }
