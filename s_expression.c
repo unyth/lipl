@@ -11,7 +11,7 @@
 enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
 
 // new lval type
-typedef struct lval {
+typedef struct lval{
 	int type;
 	long num;
 	char* err;
@@ -47,7 +47,7 @@ lval* lval_sym(char* symbol) {
 }
 
 //lval constructor for sexpr
-lval* lval_sexpr() {
+lval* lval_sexpr(void) {
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_SEXPR;
 	v->count = 0;
@@ -80,7 +80,6 @@ lval* lval_read_num(mpc_ast_t* t) {
 }
 
 // general read mpc_ast_t into lval
-
 lval* lval_add(lval* v, lval* x) {
 	v->count++;
 	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
@@ -94,36 +93,53 @@ lval* lval_read(mpc_ast_t* t) {
 	if(strstr(t->tag, "symbol")) return lval_sym(t->contents);
 
 	// in case of root (<) or sexpr, create empty list
-	if(strcmp(t->tag, ">" == 0) || strstr(t->tag, "sexpr"))
+	lval* x = NULL;
+	if(strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr"))
 		x = lval_sexpr();
 
-	for (int i = 0; i < t->children_num; i++) {
+	for (int i = 0; i < t->children_num; i++)
+	{
 		if (strcmp(t->children[i]->contents, "(") == 0) continue;
 		if (strcmp(t->children[i]->contents, ")") == 0) continue;
 		if (strcmp(t->children[i]->contents, "}") == 0) continue;
 		if (strcmp(t->children[i]->contents, "{") == 0) continue;
+		//"regex" tag does not seem to have been talked about earlier
 		if (strcmp(t->children[i]->tag, "regex") == 0) continue;
 		
 		x = lval_add(x, lval_read(t->children[i]));
 	}
+	
+	return x;
 }
 
-void lval_print(lval v) {
-	switch (v.type) {
-		case LVAL_NUM: printf("%li", v.num); break;
-		case LVAL_ERR: 
-			       if (v.err == LERR_DIV_ZERO)
-				       printf("Error: Division by Zero");
-			       if (v.err == LERR_BAD_OP)
-				       printf("Error: Invalid Operator!");
-			       if (v.err == LERR_BAD_NUM)
-				       printf("Error: Invalid Number!");
-			       break;
+// printing
+void lval_expr_print(lval* v, char open, char close);
+
+void lval_print(lval* v) {
+	switch (v->type) {
+		case LVAL_NUM: printf("%li", v->num); break;
+		case LVAL_ERR: printf("Error: %s", v->err); break;
+		case LVAL_SYM: printf("%s", v->sym); break;
+		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;
 	}
 }
 
-void lval_println(lval v) { lval_print(v); printf("\n"); }
 
+void lval_expr_print(lval* v, char open, char close) {
+	putchar(open);
+	for (int i = 0; i < v->count; i++) {
+		lval_print(v->cell[i]);
+
+		if(i != (v->count -1))
+			putchar(' ');
+	}
+	putchar(close);
+}
+
+void lval_println(lval* v) { lval_print(v); printf("\n"); }
+
+// Evaluation
+/*
 lval eval_op(lval x, char* op, lval y) {
 
 	if (x.type == LVAL_ERR) return x;
@@ -159,12 +175,12 @@ lval eval(mpc_ast_t* t) {
 
 	return x;
 }
-
+*/
 int main (int argc, char **argv) {
 
 	/* MPC parsers */
 	mpc_parser_t* Number = mpc_new("number");
-	mpc_parser_t* Operator = mpc_new("operator");
+	mpc_parser_t* Symbol = mpc_new("symbol");
 	mpc_parser_t* Sexpr = mpc_new("sexpr");
 	mpc_parser_t* Expr = mpc_new("expr");
 	mpc_parser_t* Lipl = mpc_new("lipl");
@@ -172,7 +188,7 @@ int main (int argc, char **argv) {
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
 	  " number	: /-?[0-9]+/ ;				\
-	    operator	: '+'|'-'|'*'|'/' ;			\
+	    symbol	: '+'|'-'|'*'|'/' ;			\
 	    sexpr	: '(' <expr>* ')' ;			\
 	    expr	: <number> | <symbol> | <sexpr> ;	\
 	    lipl	: /^/ <expr>* /$/ ;" ,
@@ -187,10 +203,13 @@ int main (int argc, char **argv) {
 		add_history(input);
 		
 		mpc_result_t r;
-		if (mpc_parse("<stdin>", input, Lipl, &r)) { lval result = eval(r.output);
+		if (mpc_parse("<stdin>", input, Lipl, &r)) { 
+			//lval result = eval(r.output);
+			lval* result = lval_read(r.output);
 			lval_println(result);
 			mpc_ast_delete(r.output);
 		} else {
+	
 			mpc_err_print(r.error);
 			mpc_err_delete(r.error);
 		}
@@ -199,5 +218,5 @@ int main (int argc, char **argv) {
 	}
 
 	/* Clean Up */
-	mpc_cleanup(5, Number, Operator, Sexpr, Expr, Lipl);
+	mpc_cleanup(5, Number, Symbol, Sexpr, Expr, Lipl);
 }
