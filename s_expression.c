@@ -243,7 +243,7 @@ int main (int argc, char **argv) {
 	    lipl	: /^/ <expr>* /$/ ;" ,
 	  Number, Symbol, Sexpr, Expr, Lipl);
 
-	puts("lipl version 0.0.0.0.2");
+	puts("lipl version 0.0.0.0.5");
 	puts("Press ctrl + c to exit");
 	puts("");
 
@@ -253,9 +253,9 @@ int main (int argc, char **argv) {
 		
 		mpc_result_t r;
 		if (mpc_parse("<stdin>", input, Lipl, &r)) { 
-			//lval result = eval(r.output);
-			lval* result = lval_read(r.output);
-			lval_println(result);
+			lval* x = lval_eval(lval_read(r.output));
+			lval_println(x);
+			lval_del(x);
 			mpc_ast_delete(r.output);
 		} else {
 	
