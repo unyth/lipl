@@ -8,7 +8,7 @@
 
 // enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
 
-enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
+enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR };
 
 // new lval type
 typedef struct lval{
@@ -231,6 +231,7 @@ int main (int argc, char **argv) {
 	mpc_parser_t* Number = mpc_new("number");
 	mpc_parser_t* Symbol = mpc_new("symbol");
 	mpc_parser_t* Sexpr = mpc_new("sexpr");
+	mpc_parser_t* Qexpr = mpc_new("qexpr");
 	mpc_parser_t* Expr = mpc_new("expr");
 	mpc_parser_t* Lipl = mpc_new("lipl");
 	
@@ -239,9 +240,10 @@ int main (int argc, char **argv) {
 	  " number	: /-?[0-9]+/ ;				\
 	    symbol	: '+'|'-'|'*'|'/' ;			\
 	    sexpr	: '(' <expr>* ')' ;			\
+	    qexpr	: '{' <expr>* '}' ;			\
 	    expr	: <number> | <symbol> | <sexpr> ;	\
 	    lipl	: /^/ <expr>* /$/ ;" ,
-	  Number, Symbol, Sexpr, Expr, Lipl);
+	  Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
 
 	puts("lipl version 0.0.0.0.5");
 	puts("Press ctrl + c to exit");
@@ -267,5 +269,5 @@ int main (int argc, char **argv) {
 	}
 
 	/* Clean Up */
-	mpc_cleanup(5, Number, Symbol, Sexpr, Expr, Lipl);
+	mpc_cleanup(5, Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
 }
