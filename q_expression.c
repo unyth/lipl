@@ -6,8 +6,6 @@
 
 #include "mpc.h"
 
-// enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
-
 enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR };
 
 // new lval type
@@ -55,6 +53,15 @@ lval* lval_sexpr(void) {
 	return v;
 }
 
+//lval constructor for qexpr
+lval* lval_qexpr(void) {
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_QEXPR;
+	v->count = 0;
+	v->cell = NULL;
+	return v;
+}
+
 //lval destructor
 void lval_del(lval* v) {
 
@@ -62,6 +69,7 @@ void lval_del(lval* v) {
 		case LVAL_NUM: break;
 		case LVAL_ERR: free(v->err); break;
 		case LVAL_SYM: free(v->sym); break;
+		case LVAL_QEXPR: 
 		case LVAL_SEXPR: 
 			for (int i = 0; i < v->count; i++)
 				lval_del(v->cell[i]);
@@ -92,10 +100,12 @@ lval* lval_read(mpc_ast_t* t) {
 	if(strstr(t->tag, "number")) return lval_read_num(t);
 	if(strstr(t->tag, "symbol")) return lval_sym(t->contents);
 
-	// in case of root (<) or sexpr, create empty list
+	// in case of root (<), sexpr, or qexpr create empty list
 	lval* x = NULL;
-	if(strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr"))
-		x = lval_sexpr();
+	//if(strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr"))
+	if(strcmp(t->tag, ">") == 0) {x = lval_sexpr();}
+        if(strstr(t->tag, "sexpr")) {x = lval_sexpr();}
+	if(strstr(t->tag, "qexpr")) {x = lval_qexpr();}
 
 	for (int i = 0; i < t->children_num; i++)
 	{
@@ -121,6 +131,7 @@ void lval_print(lval* v) {
 		case LVAL_ERR: printf("Error: %s", v->err); break;
 		case LVAL_SYM: printf("%s", v->sym); break;
 		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;
+		case LVAL_QEXPR: lval_expr_print(v, '{', '}'); break;
 	}
 }
 
@@ -237,11 +248,11 @@ int main (int argc, char **argv) {
 	
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
-	  " number	: /-?[0-9]+/ ;				\
-	    symbol	: '+'|'-'|'*'|'/' ;			\
-	    sexpr	: '(' <expr>* ')' ;			\
-	    qexpr	: '{' <expr>* '}' ;			\
-	    expr	: <number> | <symbol> | <sexpr> ;	\
+	  " number	: /-?[0-9]+/ ;					\
+	    symbol	: '+'|'-'|'*'|'/' ;				\
+	    sexpr	: '(' <expr>* ')' ;				\
+	    qexpr	: '{' <expr>* '}' ;				\
+	    expr	: <number> | <symbol> | <sexpr> | <qexpr> ;	\
 	    lipl	: /^/ <expr>* /$/ ;" ,
 	  Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
 
@@ -255,7 +266,8 @@ int main (int argc, char **argv) {
 		
 		mpc_result_t r;
 		if (mpc_parse("<stdin>", input, Lipl, &r)) { 
-			lval* x = lval_eval(lval_read(r.output));
+			// lval* x = lval_eval(lval_read(r.output));
+			lval* x = lval_read(r.output);
 			lval_println(x);
 			lval_del(x);
 			mpc_ast_delete(r.output);
