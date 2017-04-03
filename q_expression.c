@@ -6,6 +6,9 @@
 
 #include "mpc.h"
 
+#define LASSERT(args, cond, err) \
+	if (!(cond)) {lval_del(args); return lval_err(err); }
+
 enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR };
 
 // new lval type
@@ -249,7 +252,8 @@ int main (int argc, char **argv) {
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
 	  " number	: /-?[0-9]+/ ;					\
-	    symbol	: '+'|'-'|'*'|'/' ;				\
+	    symbol	: \"list\" | \"head\" | \"tail\" | \"join\" 	\
+	    		| \"eval\" | '+' | '-' | '*' | '/' ;		\
 	    sexpr	: '(' <expr>* ')' ;				\
 	    qexpr	: '{' <expr>* '}' ;				\
 	    expr	: <number> | <symbol> | <sexpr> | <qexpr> ;	\
