@@ -1,15 +1,13 @@
-// #include <stdio.h>
-// #include <stdlib.h>
-
 #include <editline/readline.h>
 #include <editline/history.h>
-
 #include "mpc.h"
 
 #define LASSERT(args, cond, err) \
 	if (!(cond)) {lval_del(args); return lval_err(err); }
 
 enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR };
+
+
 
 // new lval type
 typedef struct lval{
@@ -82,6 +80,9 @@ void lval_del(lval* v) {
 
 	free(v);
 }
+
+/* Function Declaration */
+lval* lval_eval(lval* v);
 
 // read mpc_ast_t with number contents into lval
 lval* lval_read_num(mpc_ast_t* t) {
@@ -204,7 +205,71 @@ lval* builtin_op(lval* a, char* op) {
 	return x;
 }
 
-lval* lval_eval(lval* v);
+/* New Builtin Ops */
+
+lval* builtin_head(lval* a) {
+	LASSERT(a, a->count == 1, "Function 'head' passed to many arguments!");
+	LASSERT(a, a->cell[0]->type == LVAL_QEXPR, 
+		"Function 'head' passed incorrect type!");
+	LASSERT(a, a->cell[0]->count != 0, "Function 'head' passed {}");
+
+	lval* v = lval_take(a,0);
+	while(v->count > 1) {lval_del(lval_pop(v,1));}
+	return v;
+}
+
+lval* builtin_tail(lval* a) {
+	LASSERT(a, a->count == 1, "Function 'tail' passed to many arguments!");
+	LASSERT(a, a->cell[0]->type == LVAL_QEXPR, 
+		"Function 'tail' passed incorrect type!");
+	LASSERT(a, a->cell[0]->count != 0, "Function 'tail' passed {}");
+
+	lval* v = lval_take(a,0);
+	lval_del(lval_pop(v,0));
+	return v;
+}
+
+lval* builtin_list(lval* a) {
+	a->type = LVAL_QEXPR;
+	return a;
+}
+
+lval* builtin_eval(lval* a) {
+	LASSERT(a, a->count == 1, "Function 'eval' passed too many arguments!");
+	LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
+		"Function 'eval' passed incorrect type!");
+
+	lval* x = lval_take(a, 0);
+	x->type = LVAL_SEXPR;
+	return lval_eval(x);
+}
+
+lval* lval_join(lval* x, lval* y) {
+	while(y->count) {
+		x = lval_add(x, lval_pop(y, 0));
+	}
+
+	lval_del(y);
+	return x;
+}
+
+lval* builtin_join(lval* a) {
+	for(int i = 0; i < a->count; i++) {
+		LASSERT(a, a->cell[i]->type == LVAL_QEXPR,
+			"Function 'join' passed incorrect type.");
+	}
+
+	lval* x = lval_pop(a, 0);
+
+	while(a->count) {
+		x = lval_join(x, lval_pop(a, 0));
+	}
+
+	lval_del(a);
+	return x;
+}
+
+/* Evaluation */
 
 lval* lval_eval_sexpr(lval* v) {
 
