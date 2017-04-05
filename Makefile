@@ -1,7 +1,7 @@
 CFLAGS := $(CFLAGS) -std=c99 -Wall
 
-q_expression: q_expression.c
-	cc $(CFLAGS) q_expression.c mpc.c -ledit -lm -o q_expression
+variables: variables.c
+	cc $(CFLAGS) variables.c mpc.c -ledit -lm -o variables
 
 clean:
-	rm q_expression
+	rm variables

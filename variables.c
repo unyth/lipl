@@ -269,6 +269,17 @@ lval* builtin_join(lval* a) {
 	return x;
 }
 
+lval* builtin(lval* a, char* func) {
+	if(strcmp("list", func) == 0) return builtin_list(a);
+	if(strcmp("head", func) == 0) return builtin_head(a);
+	if(strcmp("tail", func) == 0) return builtin_tail(a);
+	if(strcmp("join", func) == 0) return builtin_join(a);
+	if(strcmp("eval", func) == 0) return builtin_eval(a);
+	if(strstr("+-/*", func)) return builtin_op(a, func);
+	lval_del(a);
+	return lval_err("Unknown function");
+}
+
 /* Evaluation */
 
 lval* lval_eval_sexpr(lval* v) {
@@ -292,7 +303,7 @@ lval* lval_eval_sexpr(lval* v) {
 		return lval_err("S-Expression does not start with a symbol!");
 	}
 
-	lval* result = builtin_op(v, f->sym);
+	lval* result = builtin(v, f->sym);
 	lval_del(f);
 	return result;
 }
@@ -335,8 +346,8 @@ int main (int argc, char **argv) {
 		
 		mpc_result_t r;
 		if (mpc_parse("<stdin>", input, Lipl, &r)) { 
-			// lval* x = lval_eval(lval_read(r.output));
-			lval* x = lval_read(r.output);
+			lval* x = lval_eval(lval_read(r.output));
+			/*lval* x = lval_read(r.output);*/
 			lval_println(x);
 			lval_del(x);
 			mpc_ast_delete(r.output);
