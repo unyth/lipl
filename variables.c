@@ -5,16 +5,24 @@
 #define LASSERT(args, cond, err) \
 	if (!(cond)) {lval_del(args); return lval_err(err); }
 
-enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR };
+enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR, LVAL_FUN };
 
+//struct lval; //test to see if first declaration of lval and env is necessary
+//struct env;
+typedef struct lval lval;
+typedef struct env env;
 
+typedef lval*(*builtin)(env*, lval*);
 
 // new lval type
 typedef struct lval{
 	int type;
+
 	long num;
 	char* err;
 	char* sym;
+	lbuiltin fun;
+
 	int count;
 	struct lval** cell;
 } lval;
@@ -63,11 +71,20 @@ lval* lval_qexpr(void) {
 	return v;
 }
 
+//lval constructor for functions
+lval* lval_fun(lbuiltin func) {
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_FUNC;
+	v->fun = func;
+	return v;
+}
+
 //lval destructor
 void lval_del(lval* v) {
 
 	switch(v->type) {
 		case LVAL_NUM: break;
+		case LVAL_FUN: break;
 		case LVAL_ERR: free(v->err); break;
 		case LVAL_SYM: free(v->sym); break;
 		case LVAL_QEXPR: 
@@ -132,6 +149,7 @@ void lval_expr_print(lval* v, char open, char close);
 void lval_print(lval* v) {
 	switch (v->type) {
 		case LVAL_NUM: printf("%li", v->num); break;
+		case LVAL_FUN: printf("<function>"); break;
 		case LVAL_ERR: printf("Error: %s", v->err); break;
 		case LVAL_SYM: printf("%s", v->sym); break;
 		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;
