@@ -7,12 +7,12 @@
 
 enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR, LVAL_FUN };
 
-//struct lval; //test to see if first declaration of lval and env is necessary
-//struct env;
+struct lval; //test to see if first declaration of lval and env is necessary
+struct env;
 typedef struct lval lval;
-typedef struct env env;
+typedef struct lenv lenv;
 
-typedef lval*(*builtin)(env*, lval*);
+typedef lval*(*lbuiltin)(lenv*, lval*);
 
 // env type
 struct lenv {
@@ -39,6 +39,32 @@ void lenv_del(lenv* e) {
 	free(e->syms);
 	free(e->vals);
 	free(e);
+}
+
+// env functions
+lval* lenv_get(lenv* e, lval* k) {
+	for (int i = 0; i < e->count; i++)
+		if (strcmp(e->syms[i], k->sym) == 0)
+			return lval_copy(e->vals[i]);
+	return lval_err("Unbound symbol!");
+}
+
+void lenv_put(lenv* e, lval* k, lval* v) {
+	for (int i = 0; i < e->count; i++) {
+		if(strcmp(e->sym[i], k->sym) == 0) {
+			lval_del(e->val[i]);
+			e->vals[i] = lval_copy(v);
+			return;
+		}
+	}
+
+	e->count++;
+	e->vals = realloc(e->vals, sizeof(lval*) * e->count);
+	e->syms = realloc(e->syms, sizeof(lval*) * e->count);
+
+	e->vals[e->count-1] = lval_copy(v);
+	e->syms[e->count-1] = malloc(strlen(k->sym)+1);
+	strcpy(e->syms[e->count-1], k->sym);
 }
 
 // lval type
