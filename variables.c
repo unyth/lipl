@@ -6,6 +6,20 @@
 #define LASSERT(args, cond, err) \
 	if (!(cond)) {lval_del(args); return lval_err(err); }
 
+#define LASSERT_TYPE(func, args, index, expect) \
+	LASSERT(args, args->cell[index]->type == expect, \
+	"Function '%s' passed incorrect type or argument %i. Got %s, expected %s.", \
+	func, index, ltype_name(args->cell[index]->type), ltype_name(expect))
+
+#define LASSERT_NUM(func, args, num) \
+	LASSERT(args, args->count == num, \
+	"Function '%s' passed incorrect number of arguments. Got %i, expected %i.", \
+	func, args->count, num)
+
+#define LASSERT_NOT_EMPTY(func, args, index) \
+	LASSERT(args, args->cell[index]->count != 0, \
+	"Function '%s' passed {} for argument %i.", func, index);
+
 enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR, LVAL_FUN };
 
 /* Constructors */
