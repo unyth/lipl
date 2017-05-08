@@ -505,6 +505,7 @@ void lenv_add_builtins(lenv* e) {
 }
 
 /* main */
+
 int main (int argc, char **argv) {
 
 	/* MPC parsers */
@@ -517,17 +518,17 @@ int main (int argc, char **argv) {
 
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
-	  " number	: /-?[0-9]+/ ;					\
-	    symbol	: /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]*/ ;	 	\
-	    sexpr	: '(' <expr>* ')' ;				\
-	    qexpr	: '{' <expr>* '}' ;				\
+	  " number	: /-?[0-9]+/ ;								\
+	    symbol	: /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;		\
+	    sexpr	: '(' <expr>* ')' ;							\
+	    qexpr	: '{' <expr>* '}' ;							\
 	    expr	: <number> | <symbol> | <sexpr> | <qexpr> ;	\
 	    lipl	: /^/ <expr>* /$/ ;" ,
 	  Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
 
-	puts("lipl version 0.0.0.0.5");
-	puts("Press ctrl + c to exit");
-	puts("");
+	puts("lipl version 0.0.0.0.7");
+	puts("Press ctrl+c to exit");
+	//puts("");
 
 	/* build environment */
 	lenv* e = lenv_new();
@@ -545,7 +546,6 @@ int main (int argc, char **argv) {
 			lval_del(x);
 			mpc_ast_delete(r.output);
 		} else {
-
 			mpc_err_print(r.error);
 			mpc_err_delete(r.error);
 		}
@@ -555,5 +555,5 @@ int main (int argc, char **argv) {
 
 	lenv_del(e);
 	/* Clean Up */
-	mpc_cleanup(5, Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
+	mpc_cleanup(6, Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
 }
