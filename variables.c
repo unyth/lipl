@@ -39,6 +39,7 @@ char* ltype_name(int t) {
 	}
 }
 
+
 /* Constructors */
 
 // lval constructor for numbers
@@ -151,6 +152,8 @@ void lenv_del(lenv* e) {
 }
 
 
+/* Above is checked */
+
 /* Utilities */
 
 //lval utilities
@@ -218,44 +221,11 @@ lval* lval_eval_sexpr(lenv* e, lval* v) {
 	return result;
 }
 
-lval* lval_read_num(mpc_ast_t* t) {
-	errno = 0;
-	long x = strtol(t->contents, NULL, 10);
-	return errno != ERANGE ? lval_num(x) : lval_err("Invalid Number");
-}
-
 lval* lval_add(lval* v, lval* x) {
 	v->count++;
 	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
 	v->cell[v->count-1] = x;
 	return v;
-}
-
-lval* lval_read(mpc_ast_t* t) {
-
-	if(strstr(t->tag, "number")) return lval_read_num(t);
-	if(strstr(t->tag, "symbol")) return lval_sym(t->contents);
-
-	// in case of root (<), sexpr, or qexpr create empty list
-	lval* x = NULL;
-	//if(strcmp(t->tag, ">") == 0 || strstr(t->tag, "sexpr"))
-	if(strcmp(t->tag, ">") == 0) {x = lval_sexpr();}
-        if(strstr(t->tag, "sexpr")) {x = lval_sexpr();}
-	if(strstr(t->tag, "qexpr")) {x = lval_qexpr();}
-
-	for (int i = 0; i < t->children_num; i++)
-	{
-		if (strcmp(t->children[i]->contents, "(") == 0) continue;
-		if (strcmp(t->children[i]->contents, ")") == 0) continue;
-		if (strcmp(t->children[i]->contents, "}") == 0) continue;
-		if (strcmp(t->children[i]->contents, "{") == 0) continue;
-		//"regex" tag does not seem to have been talked about earlier
-		if (strcmp(t->children[i]->tag, "regex") == 0) continue;
-
-		x = lval_add(x, lval_read(t->children[i]));
-	}
-
-	return x;
 }
 
 void lval_print(lval* v) {
@@ -504,8 +474,44 @@ void lenv_add_builtins(lenv* e) {
 	lenv_add_builtin(e, "def", builtin_def);
 }
 
-/* main */
+/* Checked */
 
+/* Reading */
+
+lval* lval_read_num(mpc_ast_t* t) {
+	errno = 0;
+	long x = strtol(t->contents, NULL, 10);
+	return errno != ERANGE ? lval_num(x) : lval_err("Invalid Number");
+}
+
+lval* lval_read(mpc_ast_t* t) {
+
+	if(strstr(t->tag, "number")) return lval_read_num(t);
+	if(strstr(t->tag, "symbol")) return lval_sym(t->contents);
+
+	// in case of root (<), sexpr, or qexpr create empty list
+	lval* x = NULL;
+	// same as sample code, but should this be a series of if/else?
+	if(strcmp(t->tag, ">") == 0) x = lval_sexpr();
+	if(strstr(t->tag, "sexpr" )) x = lval_sexpr();
+	if(strstr(t->tag, "qexpr" )) x = lval_qexpr();
+
+	for (int i = 0; i < t->children_num; i++)
+	{
+		if (strcmp(t->children[i]->contents, "(") == 0) continue;
+		if (strcmp(t->children[i]->contents, ")") == 0) continue;
+		if (strcmp(t->children[i]->contents, "}") == 0) continue;
+		if (strcmp(t->children[i]->contents, "{") == 0) continue;
+		//"regex" tag does not seem to have been talked about earlier
+		if (strcmp(t->children[i]->tag, "regex") == 0) continue;
+
+		x = lval_add(x, lval_read(t->children[i]));
+	}
+
+	return x;
+}
+
+/* main */
 int main (int argc, char **argv) {
 
 	/* MPC parsers */
@@ -553,7 +559,10 @@ int main (int argc, char **argv) {
 		free(input);
 	}
 
-	lenv_del(e);
 	/* Clean Up */
+	lenv_del(e);
 	mpc_cleanup(6, Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
+
+	/* Exit Successfully */	
+	return 0;
 }
