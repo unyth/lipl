@@ -258,19 +258,118 @@ void lenv_put(lenv* e, lval* k, lval* v) {
 
 // builtin Utility
 
+lval* lval_join(lval* x, lval* y) {
+	while(y->count) {
+		x = lval_add(x, lval_pop(y, 0));
+	}
+
+	lval_del(y);
+	return x;
+}
+
+/* To be deleted
+lval* builtin(lval* a, char* func) {
+	if(strcmp("list", func) == 0) return builtin_list(a);
+	if(strcmp("head", func) == 0) return builtin_head(a);
+	if(strcmp("tail", func) == 0) return builtin_tail(a);
+	if(strcmp("join", func) == 0) return builtin_join(a);
+	if(strcmp("eval", func) == 0) return builtin_eval(a);
+	if(strstr("+/-*", func)) return builtin_op(a, func);
+	lval_del(a);
+	return lval_err("Unknown function");
+}
+*/
+
+/* Checked */
+
+/* Buildin */
+
+lval* builtin_def(lenv* e, lval* a) {
+	LASSERT_TYPE("def", a, 0, LVAL_QEXPR);
+	
+	// First argument is a symbol list
+	lval* syms = a->cell[0];
+	
+	// Ensure first list only contain elements that are symbols
+	for (int i = 0; i < syms->count; i++) {
+		LASSERT(a, syms->cell[i]->type == LVAL_SYM,
+			"Function 'def' cannot define non-symbols! "
+			"Got %s, expected %s.",
+			ltype_name(syms->cell[i]->type), ltype_name(LVAL_SYM));
+	}
+	
+	// Check correct number of symbols and values
+	LASSERT(a, (syms->count == a->count-1),
+		"Function 'def' passed too many arguments for symbols. "
+		"Got %i, expected %i",
+		syms->count, a->count-1);
+	
+	for (int i = 0; i < syms->count; i++)
+		lenv_put(e, syms->cell[i], a->cell[i+1]);
+
+	lval_del(a);
+	return lval_sexpr();
+}
+
+lval* builtin_list(lenv* e, lval* a) {
+	a->type = LVAL_QEXPR;
+	return a;
+}
+
+lval* builtin_head(lenv* e, lval* a) {
+	LASSERT_NUM("head", a, 1);
+	LASSERT_TYPE("head", a, 0, LVAL_QEXPR);
+	LASSERT_NOT_EMPTY("head", a, 0);
+
+	lval* v = lval_take(a, 0);
+	while(v->count > 1) {lval_del(lval_pop(v, 1));}
+	return v;
+}
+
+lval* builtin_tail(lenv* e, lval* a) {
+	LASSERT_NUM("tail", a, 1);
+	LASSERT_TYPE("tail", a, 0, LVAL_QEXPR);
+	LASSERT_NOT_EMPTY("tail", a, 0);
+
+	lval* v = lval_take(a, 0);
+	lval_del(lval_pop(v, 0));
+	return v;
+}
+
+lval* builtin_eval(lenv* e, lval* a) {
+	LASSERT_NUM("eval", a, 1);
+	LASSERT_TYPE("eval", a, 0, LVAL_QEXPR);
+
+	lval* x = lval_take(a, 0);
+	x->type = LVAL_SEXPR;
+	return lval_eval(e, x);
+}
+
+lval* builtin_join(lenv* e, lval* a) {
+	for(int i = 0; i < a->count; i++) {
+		LASSERT_TYPE("join", a, i, LVAL_QEXPR);
+	}
+
+	lval* x = lval_pop(a, 0);
+
+	while(a->count) {
+		x = lval_join(x, lval_pop(a, 0));
+	}
+
+	lval_del(a);
+	return x;
+}
+
 lval* builtin_op(lenv* e, lval* a, char* op) {
 
 	for (int i = 0; i < a->count; i++) {
-		if (a->cell[i]->type != LVAL_NUM) {
-			lval_del(a);
-			return lval_err("Cannot operate on a non-number.");
-		}
+		LASSERT_TYPE(op, a, i, LVAL_NUM);
 	}
 
 	lval* x = lval_pop(a, 0);
 
 	if ((strcmp(op, "-") == 0) && a->count == 0)
-		x->num = -x->num; //*= -1? test after the whole interpreter works
+		x->num *= -1; // = -x->num;
 
 	while(a->count > 0) {
 
@@ -291,11 +390,10 @@ lval* builtin_op(lenv* e, lval* a, char* op) {
 
 		lval_del(y);
 	}
+	
 	lval_del(a);
 	return x;
 }
-
-/* Mathematics Ops */
 
 lval* builtin_add(lenv* e, lval* a) {
 	return builtin_op(e, a, "+");
@@ -313,103 +411,6 @@ lval* builtin_div(lenv* e, lval* a) {
 	return builtin_op(e, a, "/");
 }
 
-lval* builtin_def(lenv* e, lval* a) {
-	LASSERT(a, a->cell[0]->type == LVAL_QEXPR, "Function 'def' passed incorrect type!");
-	
-	// First argument is a symbol list
-	lval* syms = a->cell[0];
-	
-	// Ensure first list only contain elements that are symbols
-	for (int i = 0; i < syms->count; i++) {
-		LASSERT(a, syms->cell[i]->type == LVAL_SYM, "Function 'def' cannot define non-symbols!");
-	}
-	
-	// Check correct number of symbols and values
-	LASSERT(a, syms->count == a->count-1, 
-	"Function 'def' cannot define incorrect numbers of values to symbols.");
-	
-	for (int i = 0; i < syms->count; i++)
-		lenv_put(e, syms->cell[i], a->cell[i+1]);
-
-	lval_del(a);
-	return lval_sexpr();
-}
-
-
-lval* builtin_head(lenv* e, lval* a) {
-	LASSERT_NUM("head", a, 1);
-	LASSERT_TYPE("head", a, 0, LVAL_QEXPR);
-	LASSERT_NOT_EMPTY("head", a, 0);
-
-	lval* v = lval_take(a, 0);
-	while(v->count > 1) {lval_del(lval_pop(v,1));}
-	return v;
-}
-
-lval* builtin_tail(lenv* e, lval* a) {
-	LASSERT(a, a->count == 1, "Function 'tail' passed to many arguments!");
-	LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
-		"Function 'tail' passed incorrect type!");
-	LASSERT(a, a->cell[0]->count != 0, "Function 'tail' passed {}");
-
-	lval* v = lval_take(a,0);
-	lval_del(lval_pop(v,0));
-	return v;
-}
-
-lval* builtin_list(lenv* e, lval* a) {
-	a->type = LVAL_QEXPR;
-	return a;
-}
-
-lval* builtin_eval(lenv* e, lval* a) {
-	LASSERT(a, a->count == 1, "Function 'eval' passed too many arguments!");
-	LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
-		"Function 'eval' passed incorrect type!");
-
-	lval* x = lval_take(a, 0);
-	x->type = LVAL_SEXPR;
-	return lval_eval(e, x);
-}
-
-lval* lval_join(lval* x, lval* y) {
-	while(y->count) {
-		x = lval_add(x, lval_pop(y, 0));
-	}
-
-	lval_del(y);
-	return x;
-}
-
-lval* builtin_join(lenv* e, lval* a) {
-	for(int i = 0; i < a->count; i++) {
-		LASSERT(a, a->cell[i]->type == LVAL_QEXPR,
-			"Function 'join' passed incorrect type.");
-	}
-
-	lval* x = lval_pop(a, 0);
-
-	while(a->count) {
-		x = lval_join(x, lval_pop(a, 0));
-	}
-
-	lval_del(a);
-	return x;
-}
-
-/* To be deleted
-lval* builtin(lval* a, char* func) {
-	if(strcmp("list", func) == 0) return builtin_list(a);
-	if(strcmp("head", func) == 0) return builtin_head(a);
-	if(strcmp("tail", func) == 0) return builtin_tail(a);
-	if(strcmp("join", func) == 0) return builtin_join(a);
-	if(strcmp("eval", func) == 0) return builtin_eval(a);
-	if(strstr("+/-*", func)) return builtin_op(a, func);
-	lval_del(a);
-	return lval_err("Unknown function");
-}
-*/
-
 void lenv_add_builtin(lenv* e, char* name, lbuiltin func) {
 	lval* k = lval_sym(name);
 	lval* v = lval_fun(func);
@@ -419,6 +420,9 @@ void lenv_add_builtin(lenv* e, char* name, lbuiltin func) {
 }
 
 void lenv_add_builtins(lenv* e) {
+	/* Variable functions */
+	lenv_add_builtin(e, "def", builtin_def);
+
 	/* list functions */
 	lenv_add_builtin(e, "list", builtin_list);
 	lenv_add_builtin(e, "head", builtin_head);
@@ -431,12 +435,7 @@ void lenv_add_builtins(lenv* e) {
 	lenv_add_builtin(e, "-", builtin_sub);
 	lenv_add_builtin(e, "*", builtin_mul);
 	lenv_add_builtin(e, "/", builtin_div);
-	
-	/* Variable functions */
-	lenv_add_builtin(e, "def", builtin_def);
 }
-
-/* Checked */
 
 /* Evaluation */
 
