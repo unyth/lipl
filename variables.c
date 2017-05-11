@@ -152,11 +152,7 @@ void lenv_del(lenv* e) {
 }
 
 
-/* Above is checked */
-
 /* Utilities */
-
-//lval utilities
 
 lval* lval_copy(lval* v) {
 	lval* x = malloc(sizeof(lval));
@@ -167,11 +163,12 @@ lval* lval_copy(lval* v) {
 		case LVAL_NUM: x->num = v->num; break;
 		case LVAL_ERR:
 			x->err = malloc(strlen(v->err)+1);
-			strcpy(x->err, v->err); break;
-
+			strcpy(x->err, v->err);
+			break;
 		case LVAL_SYM:
 			x->sym = malloc(strlen(v->sym)+1);
-			strcpy(x->sym, v->sym); break;
+			strcpy(x->sym, v->sym);
+			break;
 		case LVAL_SEXPR:
 		case LVAL_QEXPR:
 			x->count = v->count;
@@ -180,6 +177,7 @@ lval* lval_copy(lval* v) {
 				x->cell[i] = lval_copy(v->cell[i]);
 			break;
 	}
+	
 	return x;
 }
 
@@ -189,6 +187,32 @@ lval* lval_add(lval* v, lval* x) {
 	v->cell[v->count-1] = x;
 	return v;
 }
+
+lval* lval_join(lval* x, lval* y) {
+	while(y->count) {
+		x = lval_add(x, lval_pop(y, 0));
+	}
+
+	lval_del(y);
+	return x;
+}
+
+lval* lval_pop(lval* v, int i) {
+	lval* x = v->cell[i];
+	memmove(&v->cell[i], &v->cell[i+1], sizeof(lval*) * (v->count-i-1));
+	v->count--;
+	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
+	return x;
+}
+
+lval* lval_take(lval* v, int i) {
+	lval* x = lval_pop(v, i);
+	lval_del(v);
+	return x;
+}
+
+
+/* Print */
 
 void lval_print(lval* v) {
 	switch (v->type) {
@@ -207,7 +231,7 @@ void lval_expr_print(lval* v, char open, char close) {
 	for (int i = 0; i < v->count; i++) {
 		lval_print(v->cell[i]);
 
-		if(i != (v->count -1))
+		if(i != (v->count - 1))
 			putchar(' ');
 	}
 	putchar(close);
@@ -215,27 +239,13 @@ void lval_expr_print(lval* v, char open, char close) {
 
 void lval_println(lval* v) { lval_print(v); printf("\n"); }
 
-lval* lval_pop(lval* v, int i) {
-	lval* x = v->cell[i];
-	memmove(&v->cell[i], &v->cell[i+1], sizeof(lval*) * (v->count-i-1));
-	v->count--;
-	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
-	return x;
-}
-
-lval* lval_take(lval* v, int i) {
-	lval* x = lval_pop(v, i);
-	lval_del(v);
-	return x;
-}
-
-// lenv utilities
+/* Lisp Environment */
 
 lval* lenv_get(lenv* e, lval* k) {
 	for (int i = 0; i < e->count; i++)
 		if (strcmp(e->syms[i], k->sym) == 0)
 			return lval_copy(e->vals[i]);
-	return lval_err("Unbound symbol!");
+	return lval_err("Unbound symbol '%s'", k->sym);
 }
 
 void lenv_put(lenv* e, lval* k, lval* v) {
@@ -256,33 +266,7 @@ void lenv_put(lenv* e, lval* k, lval* v) {
 	strcpy(e->syms[e->count-1], k->sym);
 }
 
-// builtin Utility
-
-lval* lval_join(lval* x, lval* y) {
-	while(y->count) {
-		x = lval_add(x, lval_pop(y, 0));
-	}
-
-	lval_del(y);
-	return x;
-}
-
-/* To be deleted
-lval* builtin(lval* a, char* func) {
-	if(strcmp("list", func) == 0) return builtin_list(a);
-	if(strcmp("head", func) == 0) return builtin_head(a);
-	if(strcmp("tail", func) == 0) return builtin_tail(a);
-	if(strcmp("join", func) == 0) return builtin_join(a);
-	if(strcmp("eval", func) == 0) return builtin_eval(a);
-	if(strstr("+/-*", func)) return builtin_op(a, func);
-	lval_del(a);
-	return lval_err("Unknown function");
-}
-*/
-
-/* Checked */
-
-/* Buildin */
+/* Builtin */
 
 lval* builtin_def(lenv* e, lval* a) {
 	LASSERT_TYPE("def", a, 0, LVAL_QEXPR);
