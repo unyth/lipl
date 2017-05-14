@@ -7,9 +7,7 @@ You can find Daniel Holden's book at http://www.buildyourownlisp.com/.
 
 ## Required packages in addition to a C compiler
 
-I am still at the beginning stages of the process. I am writing this on a GNU/Linux machine.
-
-So far, the only other packages that I needed was Editline library.
+You'll need the Editline library.
 
 On Debian family of OS with apt:
 ```
@@ -20,3 +18,7 @@ On Fedora family of OS with yum:
 ```
 su -c "yum install libedit-dev"
 ```
+
+You also need mpc library made my the author. You just need mpc.h and mpc.c file from the following git repo:
+
+https://github.com/orangeduck/mpc
