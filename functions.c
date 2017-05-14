@@ -109,6 +109,20 @@ lval* lval_fun(lbuiltin func) {
 	return v;
 }
 
+//lval constructor for lambda
+lval* lval_lambda(lval* formals, lval* body) {
+	lval* v = malloc(sizeof(lval));
+	
+	v->builtin = NULL;
+	
+	v->env = lenv_new();
+	
+	v->formals = formals;
+	v->body = body;
+	return v;
+}
+
+
 //lenv constructor
 lenv* lenv_new(void) {
 	lenv* e = malloc(sizeof(lenv));
@@ -135,6 +149,12 @@ void lval_del(lval* v) {
 				lval_del(v->cell[i]);
 			free(v->cell);
 			break;
+		case LVAL_FUN:
+			if(!v->builtin) {
+				lenv_del(v->env);
+				lval_del(v->formals);
+				lval_del(v->body);
+			}
 	}
 
 	free(v);
@@ -175,6 +195,16 @@ lval* lval_copy(lval* v) {
 			x->cell = malloc(sizeof(lval*) * x->count);
 			for(int i = 0; i < x->count; i++)
 				x->cell[i] = lval_copy(v->cell[i]);
+			break;
+		case LVAL_FUN:
+			if(v->builtin) {
+				x->builtin = v->builtin;
+			} else {
+				x->builtin = NULL;
+				x->env = lenv_copy(v->env);
+				x->formals = lval_copy(v->formals);
+				x->body = lval_copy(v->body);
+			}
 			break;
 	}
 	
@@ -217,7 +247,17 @@ lval* lval_take(lval* v, int i) {
 void lval_print(lval* v) {
 	switch (v->type) {
 		case LVAL_NUM: printf("%li", v->num); break;
-		case LVAL_FUN: printf("<function>"); break;
+		case LVAL_FUN: 
+			if(v->builtin)
+				printf("<builtin>");
+			else {
+				printf("(\\ ");
+				lval_print(v->formals);
+				putchar(' ');
+				lval_print(v->body);
+				putchar(')');
+			}
+			break;
 		case LVAL_ERR: printf("Error: %s", v->err); break;
 		case LVAL_SYM: printf("%s", v->sym); break;
 		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;

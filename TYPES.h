@@ -7,17 +7,24 @@ typedef struct lval lval;
 typedef lval*(*lbuiltin)(lenv*, lval*);
 
 // lval type
-typedef struct lval{
+struct lval{
 	int type;
 
+	/* Basic */
 	long num;
 	char* err;
 	char* sym;
-	lbuiltin fun;
+	
+	/* Function Related */
+	lbuiltin builtin;
+	lenv* env;
+	lval* formals;
+	lval* body;
 
+	/* Expression */
 	int count;
 	struct lval** cell;
-} lval;
+};
 
 // env type
 struct lenv {

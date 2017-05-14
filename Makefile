@@ -1,7 +1,7 @@
 CFLAGS := $(CFLAGS) -std=c99 -Wall
 
-variables: variables.c
-	cc $(CFLAGS) variables.c mpc.c -ledit -lm -o variables
+functions: functions.c
+	cc $(CFLAGS) functions.c mpc.c -ledit -lm -o functions
 
 clean:
-	rm variables
+	rm functions
