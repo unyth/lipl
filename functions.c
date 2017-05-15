@@ -126,6 +126,7 @@ lval* lval_lambda(lval* formals, lval* body) {
 //lenv constructor
 lenv* lenv_new(void) {
 	lenv* e = malloc(sizeof(lenv));
+	e->parent = NULL;
 	e->count = 0;
 	e->syms = NULL;
 	e->vals = NULL;
@@ -446,6 +447,7 @@ void lenv_add_builtin(lenv* e, char* name, lbuiltin func) {
 void lenv_add_builtins(lenv* e) {
 	/* Variable functions */
 	lenv_add_builtin(e, "def", builtin_def);
+	lenv_add_builtin(e, "\\", builtin_lambda)
 
 	/* list functions */
 	lenv_add_builtin(e, "list", builtin_list);
