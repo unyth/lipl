@@ -45,6 +45,7 @@ void lval_println(lval* v);
 //lenv utilities
 lval* lenv_get(lenv* e, lval* k);
 void lenv_put(lenv* e, lval* k, lval* v);
+lenv* lenv_copy(lenv* e);
 
 
 
@@ -81,5 +82,3 @@ lval* builtin_join(lenv* e, lval* a);
 lval* builtin_op(lenv* e, lval* a, char* op);
 
 // To be deleted 
-// lval* builtin(lval* a, char* func);
-

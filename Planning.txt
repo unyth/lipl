@@ -1,0 +1,4 @@
+#Future Projects
+
+Add a function that investigates the environment to discovery types of objects/
+names.
