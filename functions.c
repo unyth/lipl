@@ -154,7 +154,7 @@ void lval_del(lval* v) {
 				lenv_del(v->env);
 				lval_del(v->formals);
 				lval_del(v->body);
-			}
+			} break;
 	}
 
 	free(v);
@@ -218,17 +218,31 @@ lval* lval_add(lval* v, lval* x) {
 }
 
 lval* lval_join(lval* x, lval* y) {
+	for (int i = 0; i < y->count; i++) {
+		x = lval_add(x, y->cell[i]);
+	}
+	
+	free(y->cell);
+	free(y);
+	
+	return x;
+	
+	/* This piece of code seems better, not sure why the change
+	   keep until I can investigate properly
+	 */
+	/*
 	while(y->count) {
 		x = lval_add(x, lval_pop(y, 0));
 	}
 
 	lval_del(y);
 	return x;
+	*/
 }
 
 lval* lval_pop(lval* v, int i) {
 	lval* x = v->cell[i];
-	memmove(&v->cell[i], &v->cell[i+1], sizeof(lval*) * (v->count-i-1));
+	memmove(&v->cell[i],	&v->cell[i+1], sizeof(lval*) * (v->count-i-1));
 	v->count--;
 	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
 	return x;
@@ -246,6 +260,10 @@ lval* lval_take(lval* v, int i) {
 void lval_print(lval* v) {
 	switch (v->type) {
 		case LVAL_NUM: printf("%li", v->num); break;
+		case LVAL_ERR: printf("Error: %s", v->err); break;
+		case LVAL_SYM: printf("%s", v->sym); break;
+		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;
+		case LVAL_QEXPR: lval_expr_print(v, '{', '}'); break;
 		case LVAL_FUN: 
 			if(v->builtin)
 				printf("<builtin>");
@@ -257,10 +275,6 @@ void lval_print(lval* v) {
 				putchar(')');
 			}
 			break;
-		case LVAL_ERR: printf("Error: %s", v->err); break;
-		case LVAL_SYM: printf("%s", v->sym); break;
-		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;
-		case LVAL_QEXPR: lval_expr_print(v, '{', '}'); break;
 	}
 }
 
@@ -301,7 +315,7 @@ void lenv_put(lenv* e, lval* k, lval* v) {
 	// Update value if already in environment
 	for (int i = 0; i < e->count; i++) {
 		if(strcmp(e->syms[i], k->sym) == 0) {
-			lval_del(e->vals[i]);
+			lval_del(e->vals[i]); //TODO: Find out how lval_del works
 			e->vals[i] = lval_copy(v);
 			return;
 		}
@@ -322,7 +336,7 @@ lenv* lenv_copy(lenv* e) {
 	n->count = e->count;
 	n->syms = malloc(sizeof(char*) * n->count);
 	n->vals = malloc(sizeof(lval*) * n->count);
-	for (int i = 0; i < n->count; i++) {
+	for (int i = 0; i < e->count; i++) {
 		n->syms[i] = malloc(strlen(e->syms[i]) + 1);
 		strcpy(n->syms[i], e->syms[i]);
 		n->vals[i] = lval_copy(e->vals[i]);
@@ -336,7 +350,7 @@ void lenv_def(lenv* e, lval* k, lval* v) {
 	lenv_put(e, k ,v);
 }
 
-/* Builtin */
+/* Builtins */
 
 lval* builtin_lambda(lenv* e, lval* a) {
 	LASSERT_NUM("\\", a, 2);
@@ -363,7 +377,7 @@ lval* builtin_var(lenv* e, lval* a, char* func) {
 	
 	// Ensure first list only contain elements that are symbols
 	for (int i = 0; i < syms->count; i++) {
-		LASSERT(a, syms->cell[i]->type == LVAL_SYM,
+		LASSERT(a, (syms->cell[i]->type == LVAL_SYM),
 			"Function '%s' cannot define non-symbols! "
 			"Got %s, expected %s.",
 			func,
@@ -382,7 +396,7 @@ lval* builtin_var(lenv* e, lval* a, char* func) {
 		// put: define locally
 		if(strcmp(func, "def") == 0)
 			lenv_def(e, syms->cell[i], a->cell[i+1]);
-		else
+		if(strcmp(func, "=") == 0)
 			lenv_put(e, syms->cell[i], a->cell[i+1]);
 	}
 
@@ -390,13 +404,8 @@ lval* builtin_var(lenv* e, lval* a, char* func) {
 	return lval_sexpr();
 }
 
-lval* builtin_def(lenv* e, lval* v) {
-	return builtin_var(e, v, "def");
-}
-
-lval* builtin_put(lenv* e, lval* v) {
-	return builtin_var(e, v, "=");
-}
+lval* builtin_def(lenv* e, lval* v) { return builtin_var(e, v, "def"); }
+lval* builtin_put(lenv* e, lval* v) { return builtin_var(e, v, "="); }
 
 lval* builtin_list(lenv* e, lval* a) {
 	a->type = LVAL_QEXPR;
@@ -440,7 +449,8 @@ lval* builtin_join(lenv* e, lval* a) {
 	lval* x = lval_pop(a, 0);
 
 	while(a->count) {
-		x = lval_join(x, lval_pop(a, 0));
+		lval* y = lval_pop(a, 0);
+		x = lval_join(x, y);
 	}
 
 	lval_del(a);
@@ -471,8 +481,8 @@ lval* builtin_op(lenv* e, lval* a, char* op) {
 				lval_del(y);
 				x = lval_err("Division by Zero!");
 				break;
-			}
-			x->num /= y->num;
+			} else
+				x->num /= y->num;
 		}
 
 		lval_del(y);
@@ -482,21 +492,10 @@ lval* builtin_op(lenv* e, lval* a, char* op) {
 	return x;
 }
 
-lval* builtin_add(lenv* e, lval* a) {
-	return builtin_op(e, a, "+");
-}
-
-lval* builtin_sub(lenv* e, lval* a) {
-	return builtin_op(e, a, "-");
-}
-
-lval* builtin_mul(lenv* e, lval* a) {
-	return builtin_op(e, a, "*");
-}
-
-lval* builtin_div(lenv* e, lval* a) {
-	return builtin_op(e, a, "/");
-}
+lval* builtin_add(lenv* e, lval* a) { return builtin_op(e, a, "+"); }
+lval* builtin_sub(lenv* e, lval* a) { return builtin_op(e, a, "-"); }
+lval* builtin_mul(lenv* e, lval* a) { return builtin_op(e, a, "*"); }
+lval* builtin_div(lenv* e, lval* a) { return builtin_op(e, a, "/"); }
 
 void lenv_add_builtin(lenv* e, char* name, lbuiltin func) {
 	lval* k = lval_sym(name);
@@ -605,7 +604,7 @@ lval* lval_eval_sexpr(lenv* e, lval* v) {
 	}
 
 	if (v->count == 0) return v;
-	if (v->count == 1) return lval_take(v, 0);
+	if (v->count == 1) return lval_eval(e, lval_take(v, 0));
 
 	lval* f = lval_pop(v, 0);
 
@@ -651,7 +650,7 @@ lval* lval_read(mpc_ast_t* t) {
 
 	// in case of root (<), sexpr, or qexpr create empty list
 	lval* x = NULL;
-	// same as sample code, but should this be a series of if/else?
+	//TODO: same as sample code, but should this be a series of if/else?
 	if(strcmp(t->tag, ">") == 0) x = lval_sexpr();
 	if(strstr(t->tag, "sexpr" )) x = lval_sexpr();
 	if(strstr(t->tag, "qexpr" )) x = lval_qexpr();
@@ -663,7 +662,7 @@ lval* lval_read(mpc_ast_t* t) {
 		if (strcmp(t->children[i]->contents, "}") == 0) continue;
 		if (strcmp(t->children[i]->contents, "{") == 0) continue;
 		//"regex" tag does not seem to have been talked about earlier
-		if (strcmp(t->children[i]->tag, "regex") == 0) continue;
+		if (strcmp(t->children[i]->tag,  "regex") == 0) continue;
 
 		x = lval_add(x, lval_read(t->children[i]));
 	}
@@ -677,10 +676,10 @@ int main (int argc, char **argv) {
 	/* MPC parsers */
 	mpc_parser_t* Number = mpc_new("number");
 	mpc_parser_t* Symbol = mpc_new("symbol");
-	mpc_parser_t* Sexpr = mpc_new("sexpr");
-	mpc_parser_t* Qexpr = mpc_new("qexpr");
-	mpc_parser_t* Expr = mpc_new("expr");
-	mpc_parser_t* Lipl = mpc_new("lipl");
+	mpc_parser_t* Sexpr  = mpc_new("sexpr");
+	mpc_parser_t* Qexpr  = mpc_new("qexpr");
+	mpc_parser_t* Expr   = mpc_new("expr");
+	mpc_parser_t* Lipl   = mpc_new("lipl");
 
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
@@ -692,7 +691,7 @@ int main (int argc, char **argv) {
 	    lipl	: /^/ <expr>* /$/ ;" ,
 	  Number, Symbol, Sexpr, Qexpr, Expr, Lipl);
 
-	puts("lipl version 0.0.0.0.7");
+	puts("lipl version 0.0.0.0.8");
 	puts("Press ctrl+c to exit");
 	//puts("");
 
@@ -707,7 +706,6 @@ int main (int argc, char **argv) {
 		mpc_result_t r;
 		if (mpc_parse("<stdin>", input, Lipl, &r)) {
 			lval* x = lval_eval(e, lval_read(r.output));
-			/*lval* x = lval_read(r.output);*/
 			lval_println(x);
 			lval_del(x);
 			mpc_ast_delete(r.output);
