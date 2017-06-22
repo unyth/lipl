@@ -12,12 +12,14 @@
 
 #define LASSERT_TYPE(func, args, index, expect) \
 	LASSERT(args, args->cell[index]->type == expect, \
-	"Function '%s' passed incorrect type or argument %i. Got %s, expected %s.", \
+	"Function '%s' passed incorrect type for argument %i. " \
+	"Got %s, expected %s.", \
 	func, index, ltype_name(args->cell[index]->type), ltype_name(expect))
 
 #define LASSERT_NUM(func, args, num) \
 	LASSERT(args, args->count == num, \
-	"Function '%s' passed incorrect number of arguments. Got %i, expected %i.", \
+	"Function '%s' passed incorrect number of arguments. " \
+	"Got %i, expected %i.", \
 	func, args->count, num)
 
 #define LASSERT_NOT_EMPTY(func, args, index) \
@@ -112,7 +114,7 @@ lval* lval_builtin(lbuiltin func) {
 //lval constructor for lambda
 lval* lval_lambda(lval* formals, lval* body) {
 	lval* v = malloc(sizeof(lval));
-	
+	v->type = LVAL_FUN;
 	v->builtin = NULL;
 	
 	v->env = lenv_new();

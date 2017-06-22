@@ -3,7 +3,7 @@
 //Forward Declarations
 //TODO: Figure out how this works, and why it can't be simplified
 struct lval;
-struct env;
+struct lenv;
 typedef struct lenv lenv;
 typedef struct lval lval;
 

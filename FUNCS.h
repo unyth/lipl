@@ -1,8 +1,8 @@
+#define FUNCS_H
+
 #ifndef TYPES_H
 #include "TYPES.h"
 #endif
-
-#define FUNCS_H
 
 /** Function Prototypes **/
 
