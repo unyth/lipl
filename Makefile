@@ -8,4 +8,3 @@ example: example.c
 
 clean:
 	rm conditionals
-	rm example

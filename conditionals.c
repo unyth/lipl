@@ -363,7 +363,7 @@ lval* builtin_ord(lenv* e, lval* a, char* op) {
 
 	if (strcmp(op, ">") == 0) r = (a->cell[0]->num > a->cell[1]->num);
 	if (strcmp(op, "<") == 0) r = (a->cell[0]->num < a->cell[1]->num);
-	if (strcmp(op, "<=" == 0) r = (a->cell[0]->num <= a->cell[1]->num);
+	if (strcmp(op, "<=") == 0) r = (a->cell[0]->num <= a->cell[1]->num);
 	if (strcmp(op, ">=") == 0) r = (a->cell[0]->num >= a->cell[1]->num);
 
 	lval_del(a);
@@ -546,6 +546,13 @@ void lenv_add_builtins(lenv* e) {
 	lenv_add_builtin(e, "-", builtin_sub);
 	lenv_add_builtin(e, "*", builtin_mul);
 	lenv_add_builtin(e, "/", builtin_div);
+
+	/* Comparison functions */
+	lenv_add_builtin(e, ">", builtin_gt);
+	lenv_add_builtin(e, "<", builtin_lt);
+	lenv_add_builtin(e, ">=", builtin_ge);
+	lenv_add_builtin(e, "<=", builtin_le);
+
 }
 
 /* Evaluation */
