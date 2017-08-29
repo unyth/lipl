@@ -18,6 +18,7 @@ struct lval{
 	long num;
 	char* err;
 	char* sym;
+	char* str;
 	
 	/* Function Related */
 	lbuiltin builtin;

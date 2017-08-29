@@ -41,6 +41,7 @@ lval* lval_take(lval* v, int i);
 void lval_print(lval* v);
 void lval_expr_print(lval* v, char open, char close);
 void lval_println(lval* v);
+void lval_print_str(lval* v);
 
 //lenv utilities
 lval* lenv_get(lenv* e, lval* k);
