@@ -1,7 +1,7 @@
 CFLAGS := $(CFLAGS) -std=c99 -Wall
 
-strings: strings.c
-	cc $(CFLAGS) strings.c mpc.c -ledit -lm -o strings
+comments: comments.c
+	cc $(CFLAGS) comments.c mpc.c -ledit -lm -o comments
 
 clean:
-	rm strings
+	rm comments
