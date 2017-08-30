@@ -804,6 +804,7 @@ int main (int argc, char **argv) {
 	mpc_parser_t* Number = mpc_new("number");
 	mpc_parser_t* Symbol = mpc_new("symbol");
 	mpc_parser_t* String = mpc_new("string");
+	mpc_parser_t* Comment = mpc_new("comment");
 	mpc_parser_t* Sexpr  = mpc_new("sexpr");
 	mpc_parser_t* Qexpr  = mpc_new("qexpr");
 	mpc_parser_t* Expr   = mpc_new("expr");
@@ -814,14 +815,15 @@ int main (int argc, char **argv) {
 	  " number	: /-?[0-9]+/ ;					\
 	    symbol	: /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;		\
 	    string	: /\"(\\\\.|[^\"])*\"/ ;			\
+	    comment	: /;[^\\r\\n]* / ;				\
 	    sexpr	: '(' <expr>* ')' ;				\
 	    qexpr	: '{' <expr>* '}' ;				\
-	    expr	: <number> | <string> | <symbol> | <sexpr> | <qexpr> ;	\
+	    expr	: <number> | <string> | <comment> | <symbol> | <sexpr> | <qexpr> ;	\
 	    lipl	: /^/ <expr>* /$/ ;" ,
-	  Number, Symbol, String, Sexpr, Qexpr, Expr, Lipl);
+	  Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lipl);
 
 	/* REPL */
-	puts("lipl version 0.0.0.0.8");
+	puts("lipl version 0.0.0.0.9");
 	puts("Press ctrl+c to exit");
 	//puts("");
 
@@ -849,6 +851,6 @@ int main (int argc, char **argv) {
 
 	/* Clean Up and Exit*/
 	lenv_del(e);
-	mpc_cleanup(7, Number, Symbol, String, Sexpr, Qexpr, Expr, Lipl);
+	mpc_cleanup(8, Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lipl);
 	return 0;
 }
