@@ -781,7 +781,7 @@ lval* lval_read(mpc_ast_t* t) {
 	if(strcmp(t->tag, ">") == 0) x = lval_sexpr();
 	if(strstr(t->tag, "sexpr" )) x = lval_sexpr();
 	if(strstr(t->tag, "qexpr" )) x = lval_qexpr();
-
+	
 	for (int i = 0; i < t->children_num; i++)
 	{
 		if (strcmp(t->children[i]->contents, "(") == 0) continue;
@@ -790,7 +790,7 @@ lval* lval_read(mpc_ast_t* t) {
 		if (strcmp(t->children[i]->contents, "{") == 0) continue;
 		//"regex" tag does not seem to have been talked about earlier
 		if (strcmp(t->children[i]->tag,  "regex") == 0) continue;
-
+		if(strstr(t->children[i]->tag, "comment")) continue;
 		x = lval_add(x, lval_read(t->children[i]));
 	}
 
@@ -812,13 +812,14 @@ int main (int argc, char **argv) {
 
 	/* MPC Grammar */
 	mpca_lang(MPCA_LANG_DEFAULT,
-	  " number	: /-?[0-9]+/ ;					\
-	    symbol	: /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;		\
-	    string	: /\"(\\\\.|[^\"])*\"/ ;			\
-	    comment	: /;[^\\r\\n]* / ;				\
-	    sexpr	: '(' <expr>* ')' ;				\
-	    qexpr	: '{' <expr>* '}' ;				\
-	    expr	: <number> | <string> | <comment> | <symbol> | <sexpr> | <qexpr> ;	\
+	  " number	: /-?[0-9]+/ ;				\
+	    symbol	: /[a-zA-Z0-9_+\\-*\\/\\\\=<>!&]+/ ;	\
+	    string	: /\"(\\\\.|[^\"])*\"/ ;		\
+	    comment	: /;[^\\r\\n]*/ ;			\
+	    sexpr	: '(' <expr>* ')' ;			\
+	    qexpr	: '{' <expr>* '}' ;			\
+	    expr	: <number> | <string> | <comment> 	\
+	    		| <symbol> | <sexpr> | <qexpr> ;	\
 	    lipl	: /^/ <expr>* /$/ ;" ,
 	  Number, Symbol, String, Comment, Sexpr, Qexpr, Expr, Lipl);
 
