@@ -1,7 +1,7 @@
-CFLAGS := $(CFLAGS) -std=c99 -Wall
+CFLAGS := -std=c11 -Wall
 
-comments: comments.c
-	cc $(CFLAGS) comments.c mpc.c -ledit -lm -o comments
+load: load.c
+	cc $(CFLAGS) load.c mpc.c -ledit -lm -o load
 
 clean:
-	rm comments
+	rm load
