@@ -19,6 +19,10 @@ On Fedora family of OS with yum:
 su -c "yum install libedit-dev"
 ```
 
-You also need mpc library made my the author. You just need mpc.h and mpc.c file from the following git repo:
+You also need mpc library made by the author. You just need mpc.h and mpc.c file from the following git repo:
 
 https://github.com/orangeduck/mpc
+
+## Current Status
+
+No more progress will be made on the project. I believe I have developed the programming skills that I wanted from doing this project. I want to learn more about programming languages (various paradigms as well as theory) before coming back to develop a good standard library for myself.
