@@ -26,3 +26,5 @@ https://github.com/orangeduck/mpc
 ## Current Status
 
 No more progress will be made on the project. I believe I have developed the programming skills that I wanted from doing this project. I want to learn more about programming languages (various paradigms as well as theory) before coming back to develop a good standard library for myself.
+
+http://www.buildyourownlisp.com/chapter15_standard_library
